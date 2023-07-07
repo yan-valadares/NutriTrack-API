@@ -1,6 +1,6 @@
 import fastify from 'fastify'
 import cookie from '@fastify/cookie'
-import { transactionRoutes } from './routes/diet'
+import { transactionRoutes } from './routes/meat'
 
 export const app = fastify()
 

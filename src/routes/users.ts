@@ -5,7 +5,7 @@ import { knex } from '../database'
 import bcrypt from 'bcrypt'
 
 export async function userRoutes(app: FastifyInstance) {
-  app.post('/', async (request, reply) => {
+  app.post('/signUp', async (request, reply) => {
     const createUserBodySchema = z.object({
       login: z.string(),
       password: z.string(),
@@ -21,11 +21,30 @@ export async function userRoutes(app: FastifyInstance) {
       password: hashedPassword,
     })
 
-    reply.cookie('sessionId', id, {
-      path: '/',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    return reply.status(201).send()
+  })
+
+  app.post('/login', async (request, reply) => {
+    const createUserBodySchema = z.object({
+      login: z.string(),
+      password: z.string(),
     })
 
-    return reply.status(201).send
+    const { login, password } = createUserBodySchema.parse(request.body)
+
+    const user = await knex('users').where({ user: login }).select().first()
+    if (user == null) {
+      return reply.status(400).send('User not founded')
+    }
+
+    if (await bcrypt.compare(password, user.password)) {
+      reply.cookie('sessionId', user.id, {
+        path: '/',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      })
+      reply.status(200).send('Sucessful login')
+    } else {
+      reply.status(401).send('Unauthorized')
+    }
   })
 }

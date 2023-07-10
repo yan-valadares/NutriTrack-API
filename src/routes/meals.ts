@@ -35,36 +35,31 @@ export async function mealsRoutes(app: FastifyInstance) {
     return { meal }
   })
 
-  app.post('/', async (request, reply) => {
-    const createMealBodySchema = z.object({
-      name: z.string(),
-      description: z.string(),
-      healthy: z.enum(['yes', 'no']),
-    })
-
-    const { name, description, healthy } = createMealBodySchema.parse(
-      request.body,
-    )
-
-    let sessionId = request.cookies.sessionId
-
-    if (!sessionId) {
-      sessionId = randomUUID()
-
-      reply.cookie('sessionId', sessionId, {
-        path: '/',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  app.post(
+    '/',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const createMealBodySchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        healthy: z.enum(['yes', 'no']),
       })
-    }
 
-    await knex('meals').insert({
-      id: randomUUID(),
-      name,
-      description,
-      healthy: healthy === 'yes',
-      session_id: sessionId,
-    })
+      const { name, description, healthy } = createMealBodySchema.parse(
+        request.body,
+      )
 
-    return reply.status(201).send
-  })
+      const { sessionId } = request.cookies
+
+      await knex('meals').insert({
+        id: randomUUID(),
+        name,
+        description,
+        healthy: healthy === 'yes',
+        session_id: sessionId,
+      })
+
+      return reply.status(201).send
+    },
+  )
 }

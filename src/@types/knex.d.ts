@@ -11,5 +11,11 @@ declare module 'knex/types/tables' {
       healthy: Boolean
       session_id?: string
     }
+    users: {
+      id: string
+      user: string
+      password: string
+      created_at: string
+    }
   }
 }

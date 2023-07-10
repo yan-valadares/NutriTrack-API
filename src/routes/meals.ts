@@ -141,29 +141,6 @@ export async function mealsRoutes(app: FastifyInstance) {
         .count()
         .where({ session_id: sessionId, healthy: false })
 
-      // const longestHealthySequence = await knex.raw(
-      //   `
-      //   SELECT MAX(healthy_sequence) as longest_sequence
-      //   FROM (
-      //     SELECT COUNT(*) as healthy_sequence
-      //     FROM meals AS m1
-      //     WHERE
-      //       m1.session_id = :sessionId
-      //       AND m1.healthy = 1
-      //       AND EXISTS (
-      //         SELECT 1
-      //         FROM meals AS m2
-      //         WHERE
-      //           m2.session_id = :sessionId
-      //           AND m2.healthy = 1
-      //           AND m2.meal_time < m1.meal_time
-      //       )
-      //     GROUP BY m1.id
-      //   ) AS subquery
-      // `,
-      //   { sessionId },
-      // )
-
       const longestHealthySequence = await knex.raw(
         `
         SELECT MAX(healthy_sequence) as longest_sequence

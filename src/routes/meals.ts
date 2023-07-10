@@ -122,4 +122,78 @@ export async function mealsRoutes(app: FastifyInstance) {
       return reply.status(204).send()
     },
   )
+
+  app.get(
+    '/metrics',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const { sessionId } = request.cookies
+
+      const mealsQuantity = await knex('meals')
+        .count()
+        .where({ session_id: sessionId })
+
+      const healthyMealsQuantity = await knex('meals')
+        .count()
+        .where({ session_id: sessionId, healthy: true })
+
+      const unhealthyMealsQuantity = await knex('meals')
+        .count()
+        .where({ session_id: sessionId, healthy: false })
+
+      // const longestHealthySequence = await knex.raw(
+      //   `
+      //   SELECT MAX(healthy_sequence) as longest_sequence
+      //   FROM (
+      //     SELECT COUNT(*) as healthy_sequence
+      //     FROM meals AS m1
+      //     WHERE
+      //       m1.session_id = :sessionId
+      //       AND m1.healthy = 1
+      //       AND EXISTS (
+      //         SELECT 1
+      //         FROM meals AS m2
+      //         WHERE
+      //           m2.session_id = :sessionId
+      //           AND m2.healthy = 1
+      //           AND m2.meal_time < m1.meal_time
+      //       )
+      //     GROUP BY m1.id
+      //   ) AS subquery
+      // `,
+      //   { sessionId },
+      // )
+
+      const longestHealthySequence = await knex.raw(
+        `
+        SELECT MAX(healthy_sequence) as longest_sequence
+        FROM (
+          SELECT COUNT(*) as healthy_sequence
+          FROM (
+            SELECT *,
+              CASE
+                WHEN LAG(healthy, 1, 0) OVER (PARTITION BY session_id ORDER BY meal_time) = 1 THEN 1
+                ELSE ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY meal_time)
+              END AS group_sequence
+            FROM meals
+            WHERE session_id = :sessionId
+          ) AS subquery
+          WHERE healthy = 1
+          GROUP BY group_sequence
+        ) AS subquery2
+        `,
+        { sessionId },
+      )
+
+      console.log(longestHealthySequence)
+      const longestSequence = longestHealthySequence[0].longest_sequence
+
+      return {
+        mealsQuantity,
+        healthyMealsQuantity,
+        unhealthyMealsQuantity,
+        longestSequence,
+      }
+    },
+  )
 }

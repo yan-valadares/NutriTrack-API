@@ -129,17 +129,23 @@ export async function mealsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { sessionId } = request.cookies
 
-      const mealsQuantity = await knex('meals')
+      const mealsQuantityQuery = await knex('meals')
         .count()
         .where({ session_id: sessionId })
 
-      const healthyMealsQuantity = await knex('meals')
+      const mealsQuantity = mealsQuantityQuery[0]['count(*)']
+
+      const healthyMealsQuantityQuery = await knex('meals')
         .count()
         .where({ session_id: sessionId, healthy: true })
 
-      const unhealthyMealsQuantity = await knex('meals')
+      const healthyMealsQuantity = healthyMealsQuantityQuery[0]['count(*)']
+
+      const unhealthyMealsQuantityQuery = await knex('meals')
         .count()
         .where({ session_id: sessionId, healthy: false })
+
+      const unhealthyMealsQuantity = unhealthyMealsQuantityQuery[0]['count(*)']
 
       const longestHealthySequence = await knex.raw(
         `

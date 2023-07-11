@@ -162,7 +162,6 @@ export async function mealsRoutes(app: FastifyInstance) {
         { sessionId },
       )
 
-      console.log(longestHealthySequence)
       const longestSequence = longestHealthySequence[0].longest_sequence
 
       return {
